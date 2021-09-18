@@ -2,7 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
-/raw_data
-.DS_Store
+/raw_data/use_of_force
+*.DS_Store
 Icon
 code/Icon
