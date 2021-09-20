@@ -47,5 +47,5 @@ uof_14_16 <- uof_14_16 %>%
          completed = completed_d)
 
 ## saving to csv
-write_csv(uof_14_16, file = "created_data/uof_16.csv")
+write_csv(uof_14_16, file = "created_data/uof_14_16.csv")
 
