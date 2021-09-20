@@ -15,8 +15,7 @@ officers <- read_excel("raw_data/police_demographics/demographics.xlsx") %>%
 shifts <- read_excel("raw_data/shifts/work_schedules.xlsx", sheet = "2016") %>% 
   janitor::clean_names()
 
-officers <- officers %>% 
-  mutate(badge = as.double(badge))
+
 
 ## join together the two data sets
 both <- shifts %>% 
