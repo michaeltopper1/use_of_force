@@ -2,7 +2,12 @@
 .Rhistory
 .RData
 .Ruserdata
-/raw_data/use_of_force
+/raw_data/use_of_force/uof_2020.pdf
+/raw_data/use_of_force/uof_2019.pdf
+/raw_data/use_of_force/uof_2018.pdf
+/raw_data/use_of_force/uof_2017.pdf
 *.DS_Store
 Icon
 code/Icon
+*.png
+/raw_data/uof_png_17
