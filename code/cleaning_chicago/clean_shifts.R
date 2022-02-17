@@ -448,7 +448,7 @@ on_duty_shifts %>% filter(last_day_on == 1) %>% select("lagged_absence_descr") %
 
 joined %>% filter(last_day_on == 1 & injured_subject == 1) %>% select("lagged_absence_descr") %>% table() %>% sort() 
 
-
+# tesyt comment 
 # on_duty_shifts %>% filter(last_day_on == "TRUE") %>%
 #   ggplot2::ggplot( aes(x = day_worked_number)) + geom_histogram(binwidth=1) + 
 #   theme_minimal() +
