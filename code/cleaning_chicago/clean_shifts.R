@@ -10,7 +10,7 @@ library(fixest)
 library(lubridate)
 
 
-setwd("/Volumes/GoogleDrive/My Drive/Michael and Toshio Folder/Data/BWC/Shifts Worked v2 (with times)/raw FOIA data")
+setwd("/Volumes/GoogleDrive/My Drive/Data/BWC/Shifts Worked v2 (with times)/raw FOIA data")
 
 # These ended up having same sheets, but keeping in
 sheets2014a <- excel_sheets("./A_A-2014-JAN-JUN.xlsx")
@@ -288,169 +288,166 @@ all_shifts <- all_shifts %>% group_by(id) %>% arrange(date, .by_group = TRUE) %>
         mutate(lagged_absence_descr = dplyr::lead(absence_descr)) %>%
         ungroup()
 
+setwd("/Volumes/GoogleDrive/My Drive/Research/use_of_force")
 write_csv(all_shifts, file="./created_data/all_shifts.csv")
 write_csv(names_of_shifts, file="./created_data/names_of_shifts.csv")
 
  
 
+# officer_count <- all_shifts %>%
+#   filter( title_cd == 9161 | #police officer rank
+#           title_cd == 9171 | #sergeant of police
+#           title_cd == 9173   #lieutenant of police
+#         ) %>% 
+#   filter(unit > 0 & unit < 26) %>%
+#   mutate(absence_recode = case_when(absence_code  == "SICKNESS IN FAMILY (SWORN MEMBERS ONLY)"      ~ "sick",
+#                                  absence_descr    == "SICKNESS INJURED NOT ON DUTY (MEDICAL ROLL)"  ~ "sick",
+#                                  absence_descr    == "ANNUAL VACATION"                              ~ "vacation",
+#                                  absence_descr    == "INJURED ON DUTY"                              ~ "injured",
+#                                  absence_descr    == "DAY OFF"                                      ~ "day_off",
+#                                  present_for_duty == "Y"                                            ~ "present"
+#                                  ),
+#         title_recode = case_when(title_cd    == 9161  ~ "po",
+#                                  title_cd    == 9171  ~ "serg",
+#                                  title_cd    == 9173  ~ "lt",
+#                                  )
+#          ) %>%
+#   group_by(date, unit, title_recode, absence_recode) %>%
+#   summarise(freq = n()) %>%
+#   ungroup()
 
 
-
-
-officer_count <- all_shifts %>%
-  filter( title_cd == 9161 | #police officer rank
-          title_cd == 9171 | #sergeant of police
-          title_cd == 9173   #lieutenant of police
-        ) %>% 
-  filter(unit > 0 & unit < 26) %>%
-  mutate(absence_recode = case_when(absence_code  == "SICKNESS IN FAMILY (SWORN MEMBERS ONLY)"      ~ "sick",
-                                 absence_descr    == "SICKNESS INJURED NOT ON DUTY (MEDICAL ROLL)"  ~ "sick",
-                                 absence_descr    == "ANNUAL VACATION"                              ~ "vacation",
-                                 absence_descr    == "INJURED ON DUTY"                              ~ "injured",
-                                 absence_descr    == "DAY OFF"                                      ~ "day_off",
-                                 present_for_duty == "Y"                                            ~ "present"
-                                 ),
-        title_recode = case_when(title_cd    == 9161  ~ "po",
-                                 title_cd    == 9171  ~ "serg",
-                                 title_cd    == 9173  ~ "lt",
-                                 )
-         ) %>%
-  group_by(date, unit, title_recode, absence_recode) %>%
-  summarise(freq = n()) %>%
-  ungroup()
-
-
-officer_count <- pivot_wider(officer_count, names_from = absence_recode, values_from = freq, values_fill = 0) %>%
-  pivot_wider(id_cols = c("date", "unit"), names_from = title_recode, values_from = c("day_off", "injured", "present",  "sick", "vacation")) %>%
-  select(date, unit, starts_with("present") , starts_with("sick"), starts_with("vacation"), starts_with("injured"), starts_with("day_off)"))%>%
-  filter(date >= "2014-01-01" & date <= "2019-12-31")
+# officer_count <- pivot_wider(officer_count, names_from = absence_recode, values_from = freq, values_fill = 0) %>%
+#   pivot_wider(id_cols = c("date", "unit"), names_from = title_recode, values_from = c("day_off", "injured", "present",  "sick", "vacation")) %>%
+#   select(date, unit, starts_with("present") , starts_with("sick"), starts_with("vacation"), starts_with("injured"), starts_with("day_off)"))%>%
+#   filter(date >= "2014-01-01" & date <= "2019-12-31")
   
-save(officer_count,file="/Volumes/GoogleDrive/My Drive/Shifts/Processed Data/officer_count.Rda")
+# save(officer_count,file="/Volumes/GoogleDrive/My Drive/Shifts/Processed Data/officer_count.Rda")
 
 # 
 # count consecutive shifts
 # 
 
-# only present officers
-on_duty_shifts <- all_shifts %>% filter(present_for_duty == "Y" &
-                                        unit > 0 & unit < 26)
+# # only present officers
+# on_duty_shifts <- all_shifts %>% filter(present_for_duty == "Y" &
+#                                         unit > 0 & unit < 26)
 
 
 
-# remove officers that have reporting errors (reported working twice in one day)
-# some of these could be recovered, but doing so by hand does not need worth it, just dropping all offenders for now
-on_duty_shifts <- on_duty_shifts %>% 
-                    group_by(id,date) %>% 
-                    mutate(reported_shifts = length(id)) %>% 
-                    filter(reported_shifts == 1) %>%
-                    ungroup()
+# # remove officers that have reporting errors (reported working twice in one day)
+# # some of these could be recovered, but doing so by hand does not need worth it, just dropping all offenders for now
+# on_duty_shifts <- on_duty_shifts %>% 
+#                     group_by(id,date) %>% 
+#                     mutate(reported_shifts = length(id)) %>% 
+#                     filter(reported_shifts == 1) %>%
+#                     ungroup()
 
-# create time since last worked variable (diff)
-on_duty_shifts <- on_duty_shifts %>% 
-                    arrange(date, .by_group = TRUE) %>%
-                    group_by(id) %>%
-                    mutate(diff = date - dplyr::lag(date)) %>%
-                    ungroup()
+# # create time since last worked variable (diff)
+# on_duty_shifts <- on_duty_shifts %>% 
+#                     arrange(date, .by_group = TRUE) %>%
+#                     group_by(id) %>%
+#                     mutate(diff = date - dplyr::lag(date)) %>%
+#                     ungroup()
 
-# create variables based on time since last worked
-on_duty_shifts <- on_duty_shifts %>%                     
-                    arrange(date, .by_group = TRUE) %>%
-                    group_by(id) %>% 
-                    mutate(days_off = round(as.double(diff) / 86400) - 1 ,
-                           first_day_on = days_off > 0,
-                           day_worked_number = ifelse(first_day_on == "TRUE", 1, NA),
-                           last_day_on = lead(first_day_on)) %>%
-                    ungroup()
-
-
-on_duty_shifts <- on_duty_shifts %>% group_by(id) %>% arrange(date) %>% 
-                      mutate(day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
-                             day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number)) %>% 
-                      ungroup()
+# # create variables based on time since last worked
+# on_duty_shifts <- on_duty_shifts %>%                     
+#                     arrange(date, .by_group = TRUE) %>%
+#                     group_by(id) %>% 
+#                     mutate(days_off = round(as.double(diff) / 86400) - 1 ,
+#                            first_day_on = days_off > 0,
+#                            day_worked_number = ifelse(first_day_on == "TRUE", 1, NA),
+#                            last_day_on = lead(first_day_on)) %>%
+#                     ungroup()
 
 
-save(on_duty_shifts,file="/Volumes/GoogleDrive/My Drive/Research/Shifts/Processed Data/on_duty_shifts.Rda")
-
-THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
-THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
-THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
-THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
-THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
-THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
-THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
-THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
-THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
-THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
-
-unjoined_reports <- anti_join(TRR_data, on_duty_shifts, by = c("id", "date"))
-
-unjoined_shifts <- unjoined_reports %>% mutate(date = ifelse(time >= 12:00, date + 1, date - 1))
-
-joined <- left_join(on_duty_shifts, TRR_data, by = c("id", "date")) 
-
-joined <- joined %>% mutate(
-          injured_subject = ifelse(subject_alleged_inj == "Yes" | subject_injured == "Yes", 1, 0),
-          first_day_on = ifelse(first_day_on == TRUE, 1, 0),
-          last_day_on = ifelse(last_day_on == TRUE, 1, 0),
-          trr_filed = ifelse(is.na(trr_filed), 0, 1),
-          day_worked_number_2 = day_worked_number*day_worked_number)
-
-joined <- joined %>% mutate(
-          month_year  = format(date, "%m/%Y"),
-          day_of_week = format(date, "%A"),
-          year = format(date, "%Y"),
-          day_of_year = format(date, "%j"),
-          month_of_year = format(date, "%m"),
-          month_and_day = format(date, "%m/%d"))
-
-joined <- joined %>% mutate(
-          day_worked_number_binned = ifelse(day_worked_number > 5, 6, day_worked_number))
-
-# filter(is.na(lagged_absence_descr) | (lagged_absence_descr != "INJURED ON DUTY" & lagged_absence_descr != "REDACTED"  & lagged_absence_descr != "PERSONAL DAY" & 
-# lagged_absence_descr != "EXCUSED FROM DUTY NON DISCIPLINARY" & lagged_absence_descr != "OTHER")) %>% 
-
-joined %>% feols( fml = injured_subject
-  ~  day_worked_number | unit.x + month_of_year + day_of_week,
-  data = .,
-  cluster = "unit.x ") %>% summary()
+# on_duty_shifts <- on_duty_shifts %>% group_by(id) %>% arrange(date) %>% 
+#                       mutate(day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number),
+#                              day_worked_number = ifelse(is.na(day_worked_number), lag(day_worked_number) + 1, day_worked_number)) %>% 
+#                       ungroup()
 
 
+# save(on_duty_shifts,file="/Volumes/GoogleDrive/My Drive/Research/Shifts/Processed Data/on_duty_shifts.Rda")
 
+# THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
+# THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
+# THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
+# THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
+# THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
+# THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
+# THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
+# THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
+# THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
+# THIS IS NO LONGER USED PASSED THIS POINT, ANALYSIS MOVED TO analysis_consec_shift.R 
 
+# unjoined_reports <- anti_join(TRR_data, on_duty_shifts, by = c("id", "date"))
 
-joined %>% feols( fml = trr_filed
-  ~  day_worked_number | unit.x + month_of_year + day_of_week,
-  data = .,
-  cluster = "unit.x ") %>% summary()
+# unjoined_shifts <- unjoined_reports %>% mutate(date = ifelse(time >= 12:00, date + 1, date - 1))
+
+# joined <- left_join(on_duty_shifts, TRR_data, by = c("id", "date")) 
+
+# joined <- joined %>% mutate(
+#           injured_subject = ifelse(subject_alleged_inj == "Yes" | subject_injured == "Yes", 1, 0),
+#           first_day_on = ifelse(first_day_on == TRUE, 1, 0),
+#           last_day_on = ifelse(last_day_on == TRUE, 1, 0),
+#           trr_filed = ifelse(is.na(trr_filed), 0, 1),
+#           day_worked_number_2 = day_worked_number*day_worked_number)
+
+# joined <- joined %>% mutate(
+#           month_year  = format(date, "%m/%Y"),
+#           day_of_week = format(date, "%A"),
+#           year = format(date, "%Y"),
+#           day_of_year = format(date, "%j"),
+#           month_of_year = format(date, "%m"),
+#           month_and_day = format(date, "%m/%d"))
+
+# joined <- joined %>% mutate(
+#           day_worked_number_binned = ifelse(day_worked_number > 5, 6, day_worked_number))
+
+# # filter(is.na(lagged_absence_descr) | (lagged_absence_descr != "INJURED ON DUTY" & lagged_absence_descr != "REDACTED"  & lagged_absence_descr != "PERSONAL DAY" & 
+# # lagged_absence_descr != "EXCUSED FROM DUTY NON DISCIPLINARY" & lagged_absence_descr != "OTHER")) %>% 
+
+# joined %>% feols( fml = injured_subject
+#   ~  day_worked_number | unit.x + month_of_year + day_of_week,
+#   data = .,
+#   cluster = "unit.x ") %>% summary()
 
 
 
 
 
+# joined %>% feols( fml = trr_filed
+#   ~  day_worked_number | unit.x + month_of_year + day_of_week,
+#   data = .,
+#   cluster = "unit.x ") %>% summary()
 
 
 
-on_duty_shifts %>% filter(last_day_on == 1) %>% select("lagged_absence_descr") %>% table() %>% sort() 
 
 
-joined %>% filter(last_day_on == 1 & injured_subject == 1) %>% select("lagged_absence_descr") %>% table() %>% sort() 
+
+
+
+# on_duty_shifts %>% filter(last_day_on == 1) %>% select("lagged_absence_descr") %>% table() %>% sort() 
+
+
+# joined %>% filter(last_day_on == 1 & injured_subject == 1) %>% select("lagged_absence_descr") %>% table() %>% sort() 
 
 
 # on_duty_shifts %>% filter(last_day_on == "TRUE") %>%
