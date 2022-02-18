@@ -2,13 +2,12 @@
 #FOIA request fulfilled via email (UCSB) 08/26/21
 #   Toshio Ferrazares
 
-library(dplyr)
 library(tidyverse)
 library(janitor)
 library(readxl)
 library(fixest)
 library(lubridate)
-
+library(tidylog, warn.conflicts = FALSE)
 
 setwd("/Volumes/GoogleDrive/My Drive/Michael and Toshio Folder/Data/BWC/Shifts Worked v2 (with times)/raw FOIA data")
 
@@ -27,7 +26,7 @@ sheets2019a <- excel_sheets("./A_A-2019-JAN-JUN.xlsx")
 sheets2019b <- excel_sheets("./A_A-2019-JUL-DEC.xlsx")
 sheets2020a <- excel_sheets("./A_A-2020-JAN-JUN.xlsx")
 sheets2020b <- excel_sheets("./A_A-2020-JUL-DEC.xlsx")
-
+# test
 
 all_shifts <- rbind(
   sheets2014a %>%
