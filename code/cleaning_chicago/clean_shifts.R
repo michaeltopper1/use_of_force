@@ -2,12 +2,13 @@
 #FOIA request fulfilled via email (UCSB) 08/26/21
 #   Toshio Ferrazares
 
+library(dplyr)
 library(tidyverse)
 library(janitor)
 library(readxl)
 library(fixest)
 library(lubridate)
-library(tidylog, warn.conflicts = FALSE)
+
 
 setwd("/Volumes/GoogleDrive/My Drive/Michael and Toshio Folder/Data/BWC/Shifts Worked v2 (with times)/raw FOIA data")
 
@@ -26,7 +27,7 @@ sheets2019a <- excel_sheets("./A_A-2019-JAN-JUN.xlsx")
 sheets2019b <- excel_sheets("./A_A-2019-JUL-DEC.xlsx")
 sheets2020a <- excel_sheets("./A_A-2020-JAN-JUN.xlsx")
 sheets2020b <- excel_sheets("./A_A-2020-JUL-DEC.xlsx")
-# test
+
 
 all_shifts <- rbind(
   sheets2014a %>%
@@ -184,13 +185,13 @@ mutate(middle_initial = case_when(
   name == "JON-MICHAEL R PRONEK" ~ "R",
   name == "MICHAEL R G SPIZZIRRI" ~ "G",
   name == "JOHN P O LEARY" ~ "P",
-  name == "MICHAEL O SHEA" ~ "NA",
+  name == "MICHAEL O SHEA" ~ as.character(NA),
   name == "MARY ELLE K MEURIS" ~ "K",
-  name == "JOHN O BRIEN" ~ "NA",
+  name == "JOHN O BRIEN" ~ as.character(NA),
   name == "ZBIG IEW A SNIEZEK" ~ "A",
   name == "ABDUL-AZIZ N VHORA" ~ "N",
   name == "JAN ASHLEY M DEJESUS" ~ "M",
-  name == "JOHNNY O DONNELL" ~ "NA",
+  name == "JOHNNY O DONNELL" ~ as.character(NA),
   name == "HUMBERTO F. F CRUZ"  ~ "F",
   name == "J'MAL L RILEY"  ~ "L",
   name == "REINER JEROME R EBARLE"  ~ "R",
@@ -257,7 +258,7 @@ mutate(last_name2 = case_when(
   name == "MARTA LINT"  ~ "KUCHARCZYK",
   name == "ALEXANDRA D HARRIS"  ~ "NITSCHKE",
   name == "ALEXANDRIA D CAMPER"  ~ "WARNER",
-  TRUE ~ "NA"))
+  TRUE ~ as.character(NA)))
 
 # merge back in names file, now with ids for each officer
 all_shifts <- left_join(all_shifts, names_of_shifts)
@@ -287,9 +288,13 @@ all_shifts <- all_shifts %>% group_by(id) %>% arrange(date, .by_group = TRUE) %>
         mutate(lagged_absence_descr = dplyr::lead(absence_descr)) %>%
         ungroup()
 
+write_csv(all_shifts, file="./created_data/all_shifts.csv")
+write_csv(names_of_shifts, file="./created_data/names_of_shifts.csv")
 
-save(all_shifts,file="/Volumes/GoogleDrive/My Drive/Shifts/Processed Data/all_shifts.Rda")
-save(names_of_shifts,file="/Volumes/GoogleDrive/My Drive/Shifts/Processed Data/names_of_shifts.Rda")
+ 
+
+
+
 
 
 officer_count <- all_shifts %>%
@@ -436,7 +441,7 @@ joined %>% feols( fml = trr_filed
   cluster = "unit.x ") %>% summary()
 
 
-# test 
+
 
 
 
@@ -447,7 +452,7 @@ on_duty_shifts %>% filter(last_day_on == 1) %>% select("lagged_absence_descr") %
 
 joined %>% filter(last_day_on == 1 & injured_subject == 1) %>% select("lagged_absence_descr") %>% table() %>% sort() 
 
-# tesyt comment 
+
 # on_duty_shifts %>% filter(last_day_on == "TRUE") %>%
 #   ggplot2::ggplot( aes(x = day_worked_number)) + geom_histogram(binwidth=1) + 
 #   theme_minimal() +
