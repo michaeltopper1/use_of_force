@@ -73,7 +73,7 @@ names_matched <- left_join(names_of_TRR, names_of_shifts, by = c("year_of_birth"
 # if want to check for unmatched names:
 # names_unmatched <- names_matched %>% filter(is.na(id))
 
-write_csv(names_of_TRR, file="./created_data/names_of_trr.csv")
+write_csv(names_matched, file="./created_data/names_of_trr.csv")
 
 
 
