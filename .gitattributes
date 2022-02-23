@@ -2,3 +2,4 @@ raw_data/louisville/uniform_citation/uniform_citation_louisville.txt filter=lfs 
 *.zip filter=lfs diff=lfs merge=lfs -text
 *.csv filter=lfs diff=lfs merge=lfs -text
 raw_data/chicago/911_calls/911_calls_append.csv filter=lfs diff=lfs merge=lfs -text
+*.Rda filter=lfs diff=lfs merge=lfs -text
