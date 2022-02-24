@@ -6,6 +6,7 @@
 ##
 
 library(tidyverse)
+library(lubridate)
 
 shifts <- read_csv("created_data/louisville/shifts.csv")
 
@@ -40,6 +41,7 @@ police_officer_shifts_trends_division <- police_officer_shifts %>%
   arrange(date) %>% 
   ggplot(aes(date, n, color = shift_hours, label = shift_hours, linetype = shift_hours, shape = shift_hours)) +
   geom_point() + 
+  geom_vline(xintercept = as_date("2016-05-01"), linetype = "dotted", color = "black") +
   facet_wrap(~division, scales = "free_y") +
   labs(x = " ", y = "Number of Shifts", color = "Hours in Shift", linetype = "Hours in Shift", shape = "Hours in Shift") +
   theme_minimal() +
