@@ -55,5 +55,27 @@ shifts <- shifts %>%
          shift_minutes = lubridate::minute(shift_length))
 
 
+
+# creating additional necessary columns -----------------------------------
+## experience will be age at jan 1, 2020
+## education will be the highest level of educational attainment split by college, some college, high school, graduate, n
+shifts <- shifts %>% 
+  mutate(start_hour = hour(startdate), end_hour = hour(enddate)) %>% 
+  extract(education_level, "education_level_letter", "(^[A-Z])", remove = F) %>% 
+  mutate(college = ifelse(education_level_letter == "G", 1, 0),
+         some_college = ifelse(education_level_letter == "F" | education_level_letter == "D" | education_level_letter == "H", 1,0),
+         graduate_degree = ifelse(education_level_letter == "I" | education_level_letter == "K", 1, 0),
+         high_school_grad = ifelse(education_level_letter == "C" | education_level_letter == "E",1 ,0), 
+         unknown_schooling = ifelse(education_level_letter == "A" | is.na(education_level_letter),1, 0)) %>% 
+  mutate(officer_tenure = as_date("2020-01-01") - appoint_date) 
+
+## creating a division column and filtering to only shifts 2010 and beyond
+shifts <- shifts %>% 
+  mutate(assignment = str_to_lower(assignment)) %>% 
+  extract(assignment, "division", "(^\\d..)", remove = F) %>% 
+  filter(shift_year >= 2010)  %>% 
+  mutate(shift_start_year = lubridate::year(startdate))
+  
+
 shifts %>% 
   write_csv("created_data/louisville/shifts.csv")
