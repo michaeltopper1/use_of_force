@@ -37,3 +37,6 @@ hours_end_density <- shifts %>%
   theme(legend.position = "bottom")
 
 hours_density_plot <- hours_start_density + hours_end_density + plot_layout(ncol = 1)
+
+ggsave(filename = "code/figures/louisville_shift_density.png", hours_density_plot, device = "png",
+       bg = "white")

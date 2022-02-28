@@ -1,0 +1,5 @@
+
+Notes on cleaning Louisville:
+* For the shifts, I needed to floor_date the shifts to be hours instead of minutes. Hence a shift that starts at
+8:30 will be registered at 8. This only affected 11k of 2.7 million shifts when I did a comparison. This
+shouldn't be an issue and the graphs look similar. This is only done to be able to match better.
