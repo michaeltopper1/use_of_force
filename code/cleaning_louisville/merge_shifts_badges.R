@@ -6,6 +6,7 @@
 ##
 
 library(tidyverse)
+library(lubridate)
 
 
 # cleaning shifts data ----------------------------------------------------
@@ -15,15 +16,16 @@ sheets <- readxl::excel_sheets("raw_data/louisville/shifts_worked/work_schedules
 shifts <- map_df(sheets, ~readxl::read_excel("raw_data/louisville/shifts_worked/work_schedules_louisville.xlsx", sheet = .) %>% 
       janitor::clean_names() %>% mutate(badge = as.character(badge)))
 
-shifts_head <- shifts %>% 
-  head(30)
 
 shifts <- shifts %>% 
-  mutate(shift_length = enddate - startdate) %>% 
-  mutate(shift_length = lubridate::seconds_to_period(shift_length)) %>% 
-  mutate(shift_year = lubridate::year(startdate),
-         shift_month = lubridate::month(startdate),
-         shift_day = lubridate::day(startdate)) 
+  mutate(start_date = floor_date(startdate, unit = "hours"),
+         end_date = floor_date(enddate, unit = "hours"),
+         shift_length = seconds(end_date - start_date)) %>% 
+  mutate(shift_length = seconds_to_period(shift_length), .before = 1) %>% 
+  mutate(shift_hours = hour(shift_length), .before =1 ) %>% 
+  mutate(shift_year = lubridate::year(start_date),
+         shift_month = lubridate::month(start_date),
+         shift_day = lubridate::day(start_date)) 
 
 officer_badges <- shifts %>% 
   distinct(badge) %>% pull()
@@ -49,11 +51,6 @@ officers <- officers %>%
 shifts <- shifts %>% 
   distinct() %>% ## removes duplicate shifts
   left_join(officers, by = c("badge"))
-
-shifts <- shifts %>% 
-  mutate(shift_hours = lubridate::hour(shift_length),
-         shift_minutes = lubridate::minute(shift_length))
-
 
 
 # creating additional necessary columns -----------------------------------
