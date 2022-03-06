@@ -57,7 +57,7 @@ uniform_citation_trend <- uniform_citation %>%
   geom_vline(xintercept = as_date("2016-05-01"), linetype = "dashed", color = "red") +
   geom_vline(xintercept = as_date("2015-09-01"), linetype = "dashed", color = "red") +
   facet_wrap(~division) +
-  labs(x = " ", y = "Number of Citations") +
+  labs(x = " ", y = "Number of Citations + Arrests") +
   theme_minimal()
 
 ggsave(filename = "code/figures/louisville_uniform_citation_trend.png", uniform_citation_trend, device = "png",

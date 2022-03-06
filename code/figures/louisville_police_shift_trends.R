@@ -74,8 +74,6 @@ police_officer_shifts_trends_2 <- police_officer_shifts %>%
   ggplot(aes(date, n, color = shift_hours, label = shift_hours, linetype = shift_hours, shape = shift_hours)) +
   geom_line() + 
   geom_point() +
-  geom_vline(xintercept = as_date("2016-05-01"), linetype = "dashed", color = "black") +
-  geom_vline(xintercept = as_date("2015-09-01"), linetype = "dashed", color = "black") +
   labs(x = " ", y = "Number of Shifts", color = "Hours in Shift", linetype = "Hours in Shift", shape = "Hours in Shift") +
   theme_minimal() +
   theme(legend.position = "bottom")

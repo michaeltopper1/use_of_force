@@ -31,16 +31,58 @@ daryl_shifts <- shifts %>%
   filter(full_name == "daryl neese 7754")
 
 daryl_shifts <- daryl_shifts %>% 
-  mutate(shift_interval = interval(startdate, enddate), .before = 1)
+  mutate(shift_interval = interval(start_date, end_date), .before = 1)
 
-daryl_shifts %>% 
-  mutate(start_date = as_date(startdate), end_date = as_date(enddate)) %>% 
-  left_join(daryl_counts, by = c("start_date" = "citation_date")) %>% 
+
+daryl_counts <- daryl %>% 
+  mutate(citation_hour = hour(citation_date_hms), .before = 1) %>% 
+  group_by(citation_date, citation_hour) %>% 
+  summarize(citations = n()) 
+
+daryl_start <- daryl_shifts %>% 
+  mutate(start_date_d = as_date(start_date), end_date_d = as_date(end_date)) %>% 
+  left_join(daryl_counts, by = c("start_date_d" = "citation_date")) %>% 
   relocate(citations, citation_hour) %>% 
-  mutate(date_hm = ymd_hm(paste0(start_date," ", citation_hour, ":00")), .before = 1) %>% 
-  mutate(citations_in_interval = ifelse(date_hm %within% shift_interval, citations, 0), .before = 1) %>% View()
+  mutate(date_hm = ymd_hm(paste0(start_date_d," ", citation_hour, ":00")), .before = 1) %>% 
+  mutate(citations_in_interval = ifelse(date_hm %within% shift_interval, citations, 0), .before = 1) %>% 
   group_by(shift_interval) %>% 
-  summarize(citations_start_total = )
+  summarize(citations_start_total = sum(citations_in_interval))
+
+## look at this link for merge:
+## https://stackoverflow.com/questions/69288212/left-join-subset-of-column-based-on-date-interval
+
+## As of right now, there are a lot of arrests taht do not happen within a shift period.
+## for instance, there are some that happen on monday at 4:45 when the shift ends at 2:00. 
+## the merge cannot pick this up, nor can anything. Would have to aggregate to weekly level as robustness.
+## due to this issue, i am not finishing the merge. 
+daryl_shifts %>% 
+  mutate(start_date_d = as_date(start_date), end_date_d = as_date(end_date)) %>%  
+  full_join(daryl_counts, by = c("end_date_d" = "citation_date")) %>% 
+  relocate(citations, citation_hour) %>% 
+  mutate(date_hm = ymd_hm(paste0(start_date_d," ", citation_hour, ":00")), .before = 1) %>% 
+  mutate(citations_in_interval = ifelse(date_hm %within% shift_interval, citations, 0), .before = 1) %>% 
+  group_by(shift_interval) %>% 
+  summarize(citations_start_total = sum(citations_in_interval)) %>% 
+  summarize(total = sum(citations_start_total, na.rm = T))
+
+daryl_end <- daryl_shifts %>% 
+  mutate(start_date_d = as_date(start_date), end_date_d = as_date(end_date)) %>%  
+  left_join(daryl_counts, by = c("end_date_d" = "citation_date")) %>% 
+  relocate(citations, citation_hour) %>% 
+  mutate(date_hm = ymd_hm(paste0(start_date_d," ", citation_hour, ":00")), .before = 1) %>% 
+  mutate(citations_in_interval = ifelse(date_hm %within% shift_interval, citations, 0), .before = 1) %>% 
+  group_by(shift_interval) %>% 
+  summarize(citations_end_total = sum(citations_in_interval)) 
+
+
+daryl_total <- daryl_start %>% 
+  left_join(daryl_end)
+
+daryl_total <- daryl_total %>% 
+  rowwise() %>% 
+  mutate(citations = sum(citations_start_total, citations_end_total, na.rm = T))
+
+
 daryl_counts <- daryl %>% 
   mutate(citation_hour = hour(citation_date_hms), .before = 1) %>% 
   group_by(citation_date, citation_hour) %>% 
