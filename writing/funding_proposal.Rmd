@@ -1,0 +1,84 @@
+---
+title: "Police Shifts and Use of Force"
+output: 
+  pdf_document:
+    number_sections: true
+author: 
+  - Michael Topper and Toshio Ferrazares
+date: "Last Updated: `r Sys.Date()`"
+editor_options: 
+  chunk_output_type: console
+indent: true
+bibliography: "references.bib"
+link-citations: yes
+linkcolor: blue
+header-includes:
+- \usepackage{amsfonts}
+- \usepackage{amsthm}
+- \usepackage{amsmath}
+- \usepackage{bbm} ##for indicator
+- \usepackage[english]{babel}
+- \usepackage{bm}
+- \usepackage{float}
+- \usepackage[fontsize=12pt]{scrextend}
+- \usepackage{indentfirst}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\noindent This project looks to study the effect of fatigue on police use-of-force. We request $1200 of funds for the hiring of two manual data entry specialists for thousands of pages of novel use-of-force reports.
+
+# Objectives and Significance to Research Agenda
+
+## Objectives and Project Overview
+
+Workplace fatigue is caused by lengthy work hours, taxing mental and physical activity, and inadequate rest. Previous research has shown that fatigue can contribute to impaired judgement, lowered response time [@bell2015effects], increased mood swings [@zhang2018extent], and implicit racial bias [@james2018stability]. This study seeks to explore how fatigue can affect police officers' probability of using use-of-force and de-escalation techniques when their shifts lengths are increased by 20-50%. In particular, this study will exploit variation between 8-hour, 10-hour, and 12-hour shifts using data from the Louisville Metro Police Department in Kentucky. Prior to 2015 the LMPD assigned officers to either 8-hour and 10-hour shifts. After a 7 month transition period where all officers worked only 8-hour shifts, 10 hour shifts were replaced with 12 hour shifts. Because of this unique design, we can overcome selection of officer types into shifts types, since all officers worked 8 hour shifts. Additionally, due to the high granularity of our individual officer data, we can make within- officer comparisons between shift types that should help control for fixed differences between officers that could confound more blunt estimation strategies. This contributes to literature that explores how shift structure effects performance [@brachet2012effect; @pencavel2015productivity] and the determinants of use of force among police officers [@ba2021role; @weisburst2019police; @hoekstra2020does].
+
+## Significance to Research Agenda
+
+This paper is planned to be a chapter in each of our dissertations. Both of our research agendas involve the economics of crime, with previous working papers on how fraternity moratoriums affect local crime and how body worn cameras affect citizen complaints. While each of us want this to be a chapter in our dissertation, the primary goal is for this project to become a published journal article. 
+
+
+# Necessity of Funding
+
+As of right now, we have the majority of the data we need. In particular, we have data from Louisville Metro Police Department that contains the universe of police shifts from 2010-2020. However, while we are still understanding this data and determining what interesting types of variation we can exploit, we have yet to unpack the use-of-force data. **The use-of-force data has been collected, but it has cannot be exported to any type of spreadsheet using PDF scraping or OCR techniques due to the low-resolution of the documents**. Hence, this data must be manually entered into a spreadsheet.
+
+We stress the novelty of this use-of-force data. While typical use-of-force data sets include office badge, race of citizen, and officer demographics, our use-of-force data is much more detailed. For instance, these use-of-force reports include the exact positions where a citizen was grabbed, the number of de-escalation techniques the officer used (in order), in addition to the typical attributes included. This allows us to analyze whether fatigue can cause officers to reduce (or increase) their de-escalation techniques in addition to understanding if officers are "rougher" with citizens when fatigued.
+
+# Schedule of Paper
+
+The paper will be completed in the following timeline. Note that this is a rough approximation.
+
+* **Spring 2022:** 
+  + Exploratory analysis of shifts data that has already been obtained.
+  + Hiring of labor for manual entry of use-of-force data.
+  + Further exploratory analysis/preliminary results using use-of-force data.
+* **Summer 2022:** 
+  + Refine results and perform necessary robustness checks. 
+  + Create first draft of paper based on results.
+* **Fall 2022:** 
+  + Present results in AMEL and refine paper. 
+  + Based on comments, send to journals for publication. 
+
+
+# Detailed Budget
+
+For this project, we request $1200.00. This will cover the costs of manual data entry for two data entry specialists to extract the use-of-force information. We request that there are two data entry specialists hired so that we can compare and contrast the results of each and make manual edits where necessary.
+
+Given that these use-of-force documents are over 10,000 pages in length, we expect this task to take approximately 55 hours per data entry specialist. This estimate was calculated by conducting test runs and extrapolating. At a rate of $11 an hour, this would amount to approximately 600 dollars per specialist. We plan to use the website UpWork to hire data entry specialists, as this website contains a large community of data entry specialists and has been frequently used by other academics.
+
+The breakdown of the project budget is as follows:
+
+* **Funds Requested:** $1200.00
+* **Budget Breakdown:**
+  + Data Entry Specialist (1) Hired from Upwork: ~55 hours of manual data entry at $11.00 an hour for roughly $600.00.
+  + Data Entry Specialist (1) Hired from Upwork: ~55 hours of manual data entry at $11.00 an hour for roughly $600.00.
+  
+\newpage
+
+# References
+  
+  
+
