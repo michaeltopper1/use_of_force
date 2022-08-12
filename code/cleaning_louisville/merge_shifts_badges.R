@@ -16,7 +16,7 @@ sheets <- readxl::excel_sheets("raw_data/louisville/shifts_worked/work_schedules
 shifts <- map_df(sheets, ~readxl::read_excel("raw_data/louisville/shifts_worked/work_schedules_louisville.xlsx", sheet = .) %>% 
       janitor::clean_names() %>% mutate(badge = as.character(badge)))
 
-
+## looks like i put the floor_date to hours. Shifts start on the hour and end on the hour
 shifts <- shifts %>% 
   mutate(start_date = floor_date(startdate, unit = "hours"),
          end_date = floor_date(enddate, unit = "hours"),
@@ -33,17 +33,33 @@ officer_badges <- shifts %>%
 
 # cleaning officer demographics -------------------------------------------
 
-officers <- readxl::read_excel("raw_data/louisville/police_demographics/demographics_louisville.xlsx")
+## this is the updated police demographics from august 2022- it has more information on gender and race of officer
+officers <- read_csv("raw_data/louisville/police_demographics/demographics_aug2022.csv") %>% 
+  janitor::clean_names() %>% 
+  rename(badge = aoc_code) %>% 
+  mutate(badge = as.character(badge))
 
+## this is the old officer information. however, it contains useful information such as the first/last name and education
+## this information should be current through 2021
+officers_old <- readxl::read_excel("raw_data/louisville/police_demographics/demographics_louisville.xlsx")
 
-officers <- officers %>% 
+officers_old <- officers_old %>% 
   mutate(across(c(appointdate, dateoftermination), ~lubridate::ymd(.))) %>% 
   rename("appoint_date" = appointdate, "termination_date" = dateoftermination,
          "first_name" = fname, "last_name" = lname, "education_level" = educationlevel)
 
-## shows that there are 3 duplicates: 1 for one guy who retired and came back, another 2 for duplicates. I collapse the 2 duplicates and distinct the 1st guy
+
+
+# joining the old and new officers ----------------------------------------
+
+## bringing together the old and new officer information.
 officers <- officers %>% 
-  distinct(badge, first_name, last_name, rank, education_level, appoint_date) 
+  left_join(officers_old)
+
+
+## shows that there is 1 duplicates
+officers <- officers %>% 
+  distinct() 
 
 
 # merging with shifts data ------------------------------------------------
@@ -63,8 +79,7 @@ shifts <- shifts %>%
          some_college = ifelse(education_level_letter == "F" | education_level_letter == "D" | education_level_letter == "H", 1,0),
          graduate_degree = ifelse(education_level_letter == "I" | education_level_letter == "K", 1, 0),
          high_school_grad = ifelse(education_level_letter == "C" | education_level_letter == "E",1 ,0), 
-         unknown_schooling = ifelse(education_level_letter == "A" | is.na(education_level_letter),1, 0)) %>% 
-  mutate(officer_tenure = as_date("2020-01-01") - appoint_date) 
+         unknown_schooling = ifelse(education_level_letter == "A" | is.na(education_level_letter),1, 0)) 
 
 ## creating a division column and filtering to only shifts 2010 and beyond
 shifts <- shifts %>% 
@@ -73,6 +88,6 @@ shifts <- shifts %>%
   filter(shift_year >= 2010)  %>% 
   mutate(shift_start_year = lubridate::year(startdate))
   
-
+## saving as csv
 shifts %>% 
-  write_csv("created_data/louisville/shifts.csv")
+  write_csv(file = here::here("created_data/louisville/shifts_demographics.csv"))
