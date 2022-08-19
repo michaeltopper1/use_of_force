@@ -171,9 +171,6 @@ uof_2019 <- uof_2019 %>%
 
 uof_mary <- bind_rows(uof_2017, uof_2018, uof_2019)
 
-uof_mary %>% 
-  colnames()
-
 # binding uof 2014-2016 ---------------------------------------------------
 ## big problem: no time_of_occurrence in this data
 ## question: how can we know when a use-of-force instance happens within a shift?
@@ -246,6 +243,19 @@ uof_cleaned <- uof_mary %>%
   bind_rows(uof_14) 
 
 
+
+# dropping unnecessary information for merging purposes -------------------
+
+## getting rid of duplicates that were weird and did not make sense.
+uof_cleaned <- uof_cleaned %>% 
+  drop_na(date_of_occurrence, badge_number) %>% 
+  distinct() %>% 
+  filter(!(id == "80-15-052109" & force_used_1 == "[no force entered]")) %>%
+  filter(!(id == "air14-522" & force_used_1 == "take down")) %>% 
+  filter(!(id == "air14-240" & force_used_1 == "take down")) %>% 
+  filter(!(id == "80-15-000544"& officer_involved == "incident_officer_1")) %>% 
+  distinct(badge_number, date_of_occurrence, time_of_occurrence,
+          officer_name, citizen_race, citizen_gender, .keep_all = T) 
 
 uof_cleaned %>% 
   write_csv("created_data/louisville/uof_cleaned.csv")

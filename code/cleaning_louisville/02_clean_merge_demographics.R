@@ -60,9 +60,14 @@ all_officers <- officers %>%
 # getting rid of unnecessary information ----------------------------------
 ## first, getting rid of officers with age == 0. These entries have no useful info in them.
 
-all_officers <- all_officers %>% 
+officers_cleaned <- all_officers %>% 
   filter(officer_age != 0) %>% 
   mutate(across(where(is.character), ~str_to_lower(.) %>% str_trim()))
 
-all_officers %>% 
+
+## getting rid of duplicates. You can run get_dupes to see the small subset that's duplicated.
+officers_cleaned <- officers_cleaned %>% 
+  distinct(badge, officer_sex, officer_age, first_name, last_name, rank_title, .keep_all = T)
+
+officers_cleaned %>%
   write_csv("created_data/louisville/officer_demographics_cleaned.csv")
