@@ -17,6 +17,7 @@ shifts <- map_df(sheets, ~readxl::read_excel("raw_data/louisville/shifts_worked/
       janitor::clean_names() %>% mutate(badge = as.character(badge)))
 
 ## looks like i put the floor_date to hours. Shifts start on the hour and end on the hour
+## start_date is the floor date of startdate. For instance, 8:30pm will be 8:00pm 
 shifts <- shifts %>% 
   mutate(start_date = floor_date(startdate, unit = "hours"),
          end_date = floor_date(enddate, unit = "hours"),
@@ -25,69 +26,38 @@ shifts <- shifts %>%
   mutate(shift_hours = hour(shift_length), .before =1 ) %>% 
   mutate(shift_year = lubridate::year(start_date),
          shift_month = lubridate::month(start_date),
-         shift_day = lubridate::day(start_date)) 
-
-officer_badges <- shifts %>% 
-  distinct(badge) %>% pull()
-
-
-# cleaning officer demographics -------------------------------------------
-
-## this is the updated police demographics from august 2022- it has more information on gender and race of officer
-officers <- read_csv("raw_data/louisville/police_demographics/demographics_aug2022.csv") %>% 
-  janitor::clean_names() %>% 
-  rename(badge = aoc_code) %>% 
-  mutate(badge = as.character(badge))
-
-## this is the old officer information. however, it contains useful information such as the first/last name and education
-## this information should be current through 2021
-officers_old <- readxl::read_excel("raw_data/louisville/police_demographics/demographics_louisville.xlsx")
-
-officers_old <- officers_old %>% 
-  mutate(across(c(appointdate, dateoftermination), ~lubridate::ymd(.))) %>% 
-  rename("appoint_date" = appointdate, "termination_date" = dateoftermination,
-         "first_name" = fname, "last_name" = lname, "education_level" = educationlevel)
+         shift_day = lubridate::day(start_date))  %>% 
+  mutate(start_hour = hour(startdate), end_hour = hour(enddate)) %>% 
+  filter(shift_year >= 2010)  
 
 
-
-# joining the old and new officers ----------------------------------------
-
-## bringing together the old and new officer information.
-officers <- officers %>% 
-  left_join(officers_old)
-
-
-## shows that there is 1 duplicates
-officers <- officers %>% 
+## getting rid of duplicates
+shifts <- shifts %>% 
   distinct() 
 
 
 # merging with shifts data ------------------------------------------------
-## apears there are an additional 11 rows that are added where there are multiple matches..negligible in my opinion - investigate
-shifts <- shifts %>% 
-  distinct() %>% ## removes duplicate shifts
+
+officers <- read_csv("created_data/louisville/officer_demographics_cleaned.csv") %>% 
+  mutate(badge = as.character(badge))
+
+## successfully merge with no duplications
+shifts_officers <- shifts %>% 
   left_join(officers, by = c("badge"))
 
 
-# creating additional necessary columns -----------------------------------
-## experience will be age at jan 1, 2020
-## education will be the highest level of educational attainment split by college, some college, high school, graduate, n
-shifts <- shifts %>% 
-  mutate(start_hour = hour(startdate), end_hour = hour(enddate)) %>% 
-  extract(education_level, "education_level_letter", "(^[A-Z])", remove = F) %>% 
-  mutate(college = ifelse(education_level_letter == "G", 1, 0),
-         some_college = ifelse(education_level_letter == "F" | education_level_letter == "D" | education_level_letter == "H", 1,0),
-         graduate_degree = ifelse(education_level_letter == "I" | education_level_letter == "K", 1, 0),
-         high_school_grad = ifelse(education_level_letter == "C" | education_level_letter == "E",1 ,0), 
-         unknown_schooling = ifelse(education_level_letter == "A" | is.na(education_level_letter),1, 0)) 
+shifts_officers <- shifts_officers %>% 
+  mutate(across(where(is.character), ~str_trim(.) %>% str_to_lower())) %>% 
+  mutate(switch_date_all_8 = as_date("2015-09-01"),
+         switch_date_12 = as_date("2016-05-01")) %>% 
+  mutate(date_bins = case_when(
+    start_date < switch_date_all_8 ~ "pre",
+    start_date >= switch_date_all_8 & start_date < switch_date_12 ~ "mid",
+    start_date >= switch_date_12 ~ "post"
+  ))
 
-## creating a division column and filtering to only shifts 2010 and beyond
-shifts <- shifts %>% 
-  mutate(assignment = str_to_lower(assignment)) %>% 
-  extract(assignment, "division", "(^\\d..)", remove = F) %>% 
-  filter(shift_year >= 2010)  %>% 
-  mutate(shift_start_year = lubridate::year(startdate))
+
   
 ## saving as csv
-shifts %>% 
-  write_csv(file = here::here("created_data/louisville/shifts_demographics.csv"))
+shifts_officers %>% 
+  write_csv(file = here::here("created_data/louisville/shifts_officers_cleaned.csv"))
