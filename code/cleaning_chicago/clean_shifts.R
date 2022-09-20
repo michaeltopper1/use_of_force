@@ -107,7 +107,8 @@ all_shifts <- rbind(
 # change units to double
 all_shifts <- all_shifts %>% mutate(unit = as.double(unit))
 
-# create shift length variable (assuming if end time is before start time then shift went to next day)
+# create shift length variable (assuming if end time is
+# before start time then shift went to next day)
 all_shifts <- all_shifts %>%
   mutate(
     shift_length = ifelse(
@@ -454,5 +455,5 @@ on_duty_shifts <- on_duty_shifts %>%
 
 
 save(on_duty_shifts,
-  file = "/Volumes/GoogleDrive/My Drive/Research/Shifts/Processed Data/on_duty_shifts.Rda"
+  file = "/Volumes/GoogleDrive/My Drive/Research/Shifts/Processed Data/on_duty_shifts.Rda" # nolint
 )
