@@ -244,5 +244,47 @@ uof_cleaned <- uof_cleaned %>%
   distinct(badge_number, date_of_occurrence, time_of_occurrence,
           officer_name, citizen_race, citizen_gender, .keep_all = T) 
 
+## repeat incidents from 2013 - 2016
+repeat_incidents_13 <- uof_cleaned |> 
+  group_by(date_of_occurrence, badge_number, id) |> 
+  count(sort = T) |> 
+  filter(n > 1) |>
+  pull(id)
+
+## cleaning out the repeats
+## these were instances of the same incident, but a citizen put as either white and black
+## or the citizen age was either one number or another
+## I collapsed the races ("white | black") and for age, I took the maximum
+cleaned_repeats <- uof_cleaned |> 
+  filter(id %in% repeat_incidents_13) |> 
+  group_by(across(-c(citizen_race, citizen_age))) |> 
+  mutate(citizen_race_collapse = paste(citizen_race, collapse = " | "), 
+         citizen_age_collapse = paste(citizen_age, collapse = " | "), .before = 1) |> 
+  separate(citizen_race_collapse, into = c("race_1", "race_2"), "\\|", remove = F) |> 
+  separate(citizen_age_collapse, into = c("age_1", "age_2"), "\\|", remove = F) |> 
+  mutate(across(where(is.character), ~str_trim(.))) |> 
+  mutate(across(starts_with("age"), ~ifelse(. == "NA", NA, .))) |> 
+  mutate(across(starts_with("age"), ~as.double(.))) |> 
+  mutate(citizen_race = ifelse(race_1 != race_2, citizen_race_collapse, citizen_race)) |>
+  mutate(max_age = max(age_1, age_2, na.rm = T)) |>
+  mutate(citizen_age = ifelse(age_1 != age_2, max_age, citizen_age)) |> 
+  ungroup() |> 
+  select(-c(age_1, age_2, race_1, race_2, max_age)) |> 
+  select(-ends_with("collapse")) |> 
+  distinct()
+
+## filtering out the repeated incidents, and binding in the cleaned ones
+uof_cleaned <- uof_cleaned |> 
+  filter(!id %in% repeat_incidents_13) |> 
+  bind_rows(cleaned_repeats) |> 
+  drop_na(time_of_occurrence) |> 
+  filter(badge_number != 1000) ## this is the swat team badge number
+
+uof_cleaned <- uof_cleaned |> 
+  mutate(date_time_uof_occurrence = as_datetime(paste(date_of_occurrence, time_of_occurrence)),
+         .before = 1) |> 
+  rename(uof_id = id) |> ## renaming the id to uof id for clarity
+  filter(badge_number != 1000) ## removing these swat team badges 
+
 uof_cleaned %>% 
   write_csv("created_data/louisville/uof_cleaned.csv")
