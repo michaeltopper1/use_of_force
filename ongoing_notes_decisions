@@ -1,5 +1,12 @@
 
 Notes on cleaning Louisville:
-* For the shifts, I needed to floor_date the shifts to be hours instead of minutes. Hence a shift that starts at
-8:30 will be registered at 8. This only affected 11k of 2.7 million shifts when I did a comparison. This
-shouldn't be an issue and the graphs look similar. This is only done to be able to match better.
+* Cleaning Shifts
+ + combined any shifts that ended and started at the same time. For instance, if a shift went from 10-12 and another went from 12-3, the shift would be 10-3.
+ + if there are two shifts that are overlapping, I first take the longer of the two shifts. This is to ensure that if there is a 10 hour shift and a 1 hour shift overlapping, the 10 hour shift takes precedent. If this does not work, and the shifts are the same length (e.g., 10 hour and 10 hour), I take the shift that is the latest in startdate of the two. This is due to the fact that this was probably updated later on in the day or retroactively.
+ + after merging, 3160/3478 of the unique use of force reports (90.8%) were merged to a shift
+ + the remaining 9% will have some summary stats made about them
+ 
+Standard Operating Procedures (Louisville)
+* UOF
+  + pg 665
+
