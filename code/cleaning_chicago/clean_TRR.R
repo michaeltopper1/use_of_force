@@ -7,7 +7,9 @@ library(tidyverse)
 library(janitor)
 library(readxl)
 library(lubridate)
-setwd("D:/Data/TRR")
+
+# setwd("D:/Data/TRR")
+setwd("/Volumes/GoogleDrive-109693337169056844052/My Drive/Data/TRR")
 
 trr_data <- read_xlsx(
   "./P703205_Ferrazares_TRR_1Jan2004_31Dec2020.xlsx",
@@ -21,16 +23,20 @@ trr_data <- read_xlsx(
     year_of_birth = member_birth_year,
     sex = member_sex
   ) %>%
-  separate(col = incident_date_time, into = c("date", "time"), "\\s")
+  separate(
+    col = incident_date_time,
+    into = c("date", "time"),
+    "\\s",
+    remove = FALSE
+  )
 
 # format date and time
 trr_data <- trr_data %>% mutate(
   date = dmy(date),
   appointed_date = ymd(appointed_date),
-  year_of_birth = as.double(year_of_birth)
+  year_of_birth = as.double(year_of_birth),
+  incident_date_time = dmy_hm(incident_date_time)
 )
-
-
 
 # Remove trailing or leading spaces from names (same as clean_shifts.R)
 trr_data$last_name <- trr_data$last_name %>%
@@ -77,10 +83,11 @@ names_of_trr <- names_of_trr %>%
 
 # saving as both csv and Rda, should change in
 # future to save space but convienent for now
-setwd("D:/Research/Shifts/Processed Data") # nolint
+setwd("/Volumes/GoogleDrive-109693337169056844052/My Drive/Research/shifts/Processed Data") # nolint
 write_csv(names_of_trr, file = "./names_of_trr.csv")
 write_csv(trr_data, file = "./trr_data.csv")
 
+setwd("/Volumes/GoogleDrive-109693337169056844052/My Drive/Research/shifts/use_of_force/created_data/chicago") # nolint
 save(trr_data, file = "./trr_data.Rda")
 save(names_of_trr, file = "./names_of_trr.Rda")
 
