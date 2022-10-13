@@ -2,17 +2,19 @@
 #
 #   Toshio Ferrazares
 
-library(dplyr)
 library(tidyverse)
 library(fixest)
 library(lubridate)
+library(tidylog)
+library(janitor)
 
-# setwd("D:/")
-load("./created_data/chicago/trr_data.Rda")
+# setwd("D:/Research/shifts/use_of_force")
+setwd("/Volumes/GoogleDrive-109693337169056844052/My Drive/Research/shifts/use_of_force") # nolint
 load("./created_data/chicago/names_of_trr.Rda")
+load("./created_data/chicago/trr_data.Rda")
 
-load("./created_data/chicago/on_duty_shifts.Rda")
 load("./created_data/chicago/names_of_shifts.Rda")
+load("./created_data/chicago/on_duty_shifts.Rda")
 
 # prepare shift names with alternative last names
 # this is created by hand in clean_shifts.r
@@ -41,18 +43,64 @@ names_matched <- left_join(names_of_trr, names_of_shifts,
         first_name, middle_initial, last_name
     )
 
+# check here, seems dates are off for watch 1
+on_duty_shifts <- on_duty_shifts %>%
+    mutate(date = if_else(watch == 1, date - days(1), date)
+
 # only using 01/2014-12/2019
-trr_data <- trr_data %>% filter(date >= "2014-01-01" & date <= "2019-12-31")
+trr_data <- trr_data %>%
+    filter(date >= "2014-01-01" & date <= "2019-12-31")
+on_duty_shifts <- on_duty_shifts %>%
+    filter(date >= "2014-01-01" & date <= "2019-12-31")
 
 # merge id from shifts into trr data
 trr_data <- trr_data %>% left_join(names_matched)
 
+# using officer demographics from shift data
+trr_data <- trr_data %>% subset(
+    select = -c(
+        unit, star, year_of_birth, appointed_date,
+        sex, first_name, last_name, middle_initial
+    )
+)
+
 # merge trr data to shift data using ids
-# 26,943 or 33,831 successful
 joined_shifts <- left_join(on_duty_shifts, trr_data, by = c("id", "date"))
+
+# check if reports are within shift time
+joined_shifts <- joined_shifts %>% mutate(
+    within_shift = if_else(
+        incident_date_time < shift_end + hours(6) &
+            incident_date_time > shift_start - hours(6),
+        1, 0
+    )
+)
 
 # save trr reports that failed to match to a shift
 unjoined_reports <- anti_join(trr_data, on_duty_shifts, by = c("id", "date"))
+
+# save trr reported that succesfully matched to shifts
+success_reports <- joined_shifts %>%
+    filter(within_shift == 1) %>%
+    select(colnames(trr_data))
+
+# add in force reports that happen outside to shift times of that day
+# to the reports that did not merge to a day (unjoined_reports)
+unjoined_reports <- joined_shifts %>%
+    # rename(
+    #     last_name = last_name.y,
+    #     first_name = first_name.y,
+    #     middle_initial = middle_initial.y,
+    #     star = star.y,
+    #     sex = sex.y,
+    #     appointed_date = appointed_date.y,
+    #     year_of_birth = year_of_birth.y,
+    #     unit = unit.y
+    # ) %>%
+    filter(within_shift == 0) %>%
+    select(colnames(trr_data)) %>%
+    bind_rows(unjoined_reports)
+
 
 # retrieve hours from trr reports
 # temporary fix is to assign trr reports
@@ -67,23 +115,129 @@ unjoined_reports <- unjoined_reports %>%
 
 # change date of unjoined reports based
 # on closest day (note poor naming, these are not shifts)
-unjoined_shifts <- unjoined_reports %>%
+unjoined_dates_adjusted <- unjoined_reports %>%
     mutate(date = if_else(
-        hour >= 12, ymd(date) + days(1),
-        ymd(date) - days(1)
-    )) %>%
-    filter(date >= "2014-01-01") %>%
-    select(id, date, hour, subject_actions, member_actions) %>%
-    rename(
-        subject_actions2 = subject_actions,
-        member_actions2 = member_actions,
-        hour2 = hour
+        hour >= 12,
+        ymd(date) + days(1), ymd(date) - days(1)
+    ))
+
+# merge in adjusted date reports
+joined_shifts <- left_join(
+    on_duty_shifts, unjoined_dates_adjusted,
+    by = c("id", "date")
+)
+
+# check if within shift range
+joined_shifts <- joined_shifts %>% mutate(
+    within_shift2 = if_else(
+        incident_date_time < shift_end + hours(6) &
+            incident_date_time > shift_start - hours(6),
+        2, 0
     )
+)
+
+# take succesful matches and join them to success_reports
+success_reports <- joined_shifts %>%
+    filter(within_shift2 == 2) %>%
+    select(colnames(trr_data)) %>%
+    bind_rows(success_reports)
+
+
+# unjoined reports from the adjusted set
+# also correct dates back to original
+unjoined_reports <- anti_join(unjoined_dates_adjusted, on_duty_shifts)
+
+# add in unjoined reports to reports outside of shift range
+unjoined_reports <- joined_shifts %>%
+    filter(within_shift2 == 0) %>%
+    select(colnames(trr_data)) %>%
+    bind_rows(unjoined_reports) %>%
+    separate(time,
+        into = c("hour", "minute"),
+        sep = ":", remove = FALSE, convert = TRUE
+    ) %>%
+    mutate(date = if_else(
+        hour >= 12,
+        ymd(date) - days(1), ymd(date) + days(1)
+    ))
+
+
+
+# for manual inspection
+unjoined_reports %>% left_join(names_of_trr) %>%
+write_csv(file = "./unjoined_reports.csv")
+
+
+
+
+
+# left off here
+
+
+
+# try to round in the opposite way
+unjoined_dates_adjusted2 <- unjoined_reports %>%
+    mutate(date = if_else(
+        hour >= 12,
+        ymd(date) - days(2), ymd(date) + days(2)
+    )) %>%
+    select(
+        id, date, hour, subject_actions, member_actions, incident_date_time
+    ) %>%
+    rename( # rename is so that if there are 2 reports that merge in, keep both
+        subject_actions3 = subject_actions,
+        member_actions3 = member_actions,
+        incident_date_time3 = incident_date_time,
+        hour3 = hour
+    )
+
+
+# merge in adjusted date reports
+joined_shifts <- left_join(
+    joined_shifts, unjoined_dates_adjusted2,
+    by = c("id", "date")
+)
+
+# check if within shift range
+joined_shifts <- joined_shifts %>% mutate(
+    within_shift3 = if_else(
+        incident_date_time2 < shift_end + hours(6) &
+            incident_date_time2 > shift_start - hours(6),
+        3, 0
+    )
+)
+
+
+
+
+
+
+
+
+# for manual inspection
+unjoined_dates_adjusted %>%
+    anti_join(joined_shifts) %>%
+    write_csv(file = "./unjoined_reports2.csv")
+
+
+
+
+# for manual inspection
+on_duty_shifts %>%
+    filter(id == 10765) %>%
+    write_csv(file = "./officer_export.csv")
+
+
+
+
+
+
+
 
 # data set that shifts days by 2 for reports that
 # still do not match to on duty shifts
-unjoined_shifts2 <- anti_join(
-    unjoined_shifts, joined_shifts,
+unjoined_reports2 <- anti_join(
+    unjoined_dates_adjusted, joined_shifts,
     by = c("id", "date")
 ) %>%
     mutate(date = if_else(hour2 >= 12,
@@ -270,7 +424,7 @@ joined %>%
     feols(
         fml = has_trr
         ~ day_worked_number + day_worked_number2 |
-                id + month_of_year + day_of_week,
+            id + month_of_year + day_of_week,
         data = .,
         cluster = "id"
     ) %>%

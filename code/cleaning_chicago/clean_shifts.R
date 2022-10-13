@@ -304,7 +304,7 @@ all_shifts <- left_join(all_shifts, titles, by = "title_cd")
 
 # import and merge units
 units <-
-  read_csv("/Volumes/GoogleDrive/My Drive/Michael and Toshio Folder/Data/BWC/Shifts Worked v2 (with times)/units_reshaped.csv") %>% # nolint
+  read_csv("/Volumes/GoogleDrive-109693337169056844052/My Drive/Data/BWC/Shifts Worked v2 (with times)/units_reshaped.csv") %>% # nolint
   clean_names() %>%
   rename(unit = cpdunitno, unit1 = descr1, unit2 = descr2, unit3 = descr3) %>%
   mutate(unit = as.double(unit))
@@ -319,66 +319,66 @@ all_shifts <- all_shifts %>%
   mutate(lagged_absence_descr = dplyr::lead(absence_descr)) %>%
   ungroup()
 
-write_csv(all_shifts, file = "./created_data/all_shifts.csv")
-write_csv(names_of_shifts, file = "./created_data/names_of_shifts.csv")
+setwd("/Volumes/GoogleDrive-109693337169056844052/My Drive/Research/shifts/use_of_force") # nolint
+# write_csv(all_shifts, file = "/Volumes/GoogleDrive-109693337169056844052/My Drive/Research/shifts/Processed Data/all_shifts.csv")
+# write_csv(names_of_shifts, file = "/Volumes/GoogleDrive-109693337169056844052/My Drive/Research/shifts/Processed Data/names_of_shifts.csv")
+save(names_of_shifts, file = "./created_data/chicago/names_of_shifts.Rda")
+
+# OFFICER PER DAY DATA, THIS IS NO LONGER USED
+# this is used for instrumenting on duty officer
+# with sick leave
+# officer_count <- all_shifts %>%
+#   filter(
+#     title_cd == 9161 | # police officer rank
+#       title_cd == 9171 | # sergeant of police
+#       title_cd == 9173 # lieutenant of police
+#   ) %>%
+#   mutate(
+#     absence_recode = case_when(
+#       absence_code == "SICKNESS IN FAMILY (SWORN MEMBERS ONLY)" ~ "sick",
+#       absence_descr == "SICKNESS INJURED NOT ON DUTY (MEDICAL ROLL)" ~ "sick",
+#       absence_descr == "ANNUAL VACATION" ~ "vacation",
+#       absence_descr == "INJURED ON DUTY" ~ "injured",
+#       absence_descr == "DAY OFF" ~ "day_off",
+#       present_for_duty == "Y" ~ "present"
+#     ),
+#     title_recode = case_when(
+#       title_cd == 9161 ~ "po",
+#       title_cd == 9171 ~ "serg",
+#       title_cd == 9173 ~ "lt",
+#     )
+#   ) %>%
+#   group_by(date, unit, title_recode, absence_recode) %>%
+#   summarise(freq = n()) %>%
+#   ungroup()
 
 
-officer_count <- all_shifts %>%
-  filter(
-    title_cd == 9161 | # police officer rank
-      title_cd == 9171 | # sergeant of police
-      title_cd == 9173 # lieutenant of police
-  ) %>%
-  filter(unit > 0 & unit < 26) %>%
-  mutate(
-    absence_recode = case_when(
-      absence_code == "SICKNESS IN FAMILY (SWORN MEMBERS ONLY)" ~ "sick",
-      absence_descr == "SICKNESS INJURED NOT ON DUTY (MEDICAL ROLL)" ~ "sick",
-      absence_descr == "ANNUAL VACATION" ~ "vacation",
-      absence_descr == "INJURED ON DUTY" ~ "injured",
-      absence_descr == "DAY OFF" ~ "day_off",
-      present_for_duty == "Y" ~ "present"
-    ),
-    title_recode = case_when(
-      title_cd == 9161 ~ "po",
-      title_cd == 9171 ~ "serg",
-      title_cd == 9173 ~ "lt",
-    )
-  ) %>%
-  group_by(date, unit, title_recode, absence_recode) %>%
-  summarise(freq = n()) %>%
-  ungroup()
+# officer_count <- pivot_wider(officer_count,
+#   names_from = absence_recode,
+#   values_from = freq,
+#   values_fill = 0
+# ) %>%
+#   pivot_wider(
+#     id_cols = c("date", "unit"),
+#     names_from = title_recode,
+#     values_from = c("day_off", "injured", "present", "sick", "vacation")
+#   ) %>%
+#   select(
+#     date, unit, starts_with("present"),
+#     starts_with("sick"), starts_with("vacation"),
+#     starts_with("injured"), starts_with("day_off)")
+#   ) %>%
+#   filter(date >= "2014-01-01" & date <= "2019-12-31")
 
-
-officer_count <- pivot_wider(officer_count,
-  names_from = absence_recode,
-  values_from = freq,
-  values_fill = 0
-) %>%
-  pivot_wider(
-    id_cols = c("date", "unit"),
-    names_from = title_recode,
-    values_from = c("day_off", "injured", "present", "sick", "vacation")
-  ) %>%
-  select(
-    date, unit, starts_with("present"),
-    starts_with("sick"), starts_with("vacation"),
-    starts_with("injured"), starts_with("day_off)")
-  ) %>%
-  filter(date >= "2014-01-01" & date <= "2019-12-31")
-
-save(officer_count, file = "/Volumes/GoogleDrive/My Drive/Shifts/Processed Data/officer_count.Rda") # nolint
-
+# save(officer_count, file = "/Volumes/GoogleDrive-109693337169056844052/My Drive/Research/shifts/Processed Data/officer_count.Rda") # nolint
 #
 # count consecutive shifts
 #
 
 # only present officers
 on_duty_shifts <- all_shifts %>% filter(
-  present_for_duty == "Y" & unit > 0 & unit < 26
+  present_for_duty == "Y"
 )
-
-
 
 # remove officers that have reporting errors (reported working twice in one day)
 # some of these could be recovered,
@@ -454,6 +454,42 @@ on_duty_shifts <- on_duty_shifts %>%
   ungroup()
 
 
+# format start and end time with date
+on_duty_shifts <- on_duty_shifts %>% mutate(
+  start_time_h = substr(start_time, start = 1, stop = 2),
+  start_time_m = substr(start_time, start = 3, stop = 4),
+  shift_start = date + hours(start_time_h) + minutes(start_time_m)
+)
+
+on_duty_shifts <- on_duty_shifts %>% mutate(
+  end_time_h = substr(end_time, start = 1, stop = 2),
+  end_time_m = substr(end_time, start = 3, stop = 4),
+  shift_end = date + hours(end_time_h) + minutes(end_time_m)
+)
+
+# correct end times that are on the next day
+on_duty_shifts <- on_duty_shifts %>% mutate(
+  shift_end = if_else(shift_end < shift_start, shift_end + days(1), shift_end)
+)
+
+# colnames
+# [1] "aa_date"           "unit"              "watch"             "name"              "star"              "title_cd"
+# [7] "title"             "sworn"             "race"              "sex"               "year_of_birth"     "appointed_date"
+# [13] "present_for_duty"  "absence_code"      "absence_descr"     "car_no"            "beat_no"           "squad"
+# [19] "team"              "start_time"        "end_time"          "shift_length"      "date"              "descr"
+# [25] "unit1"             "createddate1"      "modifieddate1"     "unit2"             "createddate2"      "modifieddate2"
+# [31] "unit3"             "createddate3"      "modifieddate3"     "first_name"        "middle_initial"    "last_name"
+# [37] "id"                "reported_shifts"   "diff"              "days_off"          "first_day_on"      "day_worked_number"
+# [43] "last_day_on"       "start_time_h"      "start_time_m"      "shift_start"       "end_time_h"        "end_time_m"
+# [49] "shift_end"
+
+# remove some unwanted columns
+on_duty_shifts <- on_duty_shifts %>% subset(select = -c(
+  diff, start_time_h, start_time_m, end_time_h, end_time_m
+))
+
+
+setwd("/Volumes/GoogleDrive-109693337169056844052/My Drive/Research/shifts/use_of_force") # nolint
 save(on_duty_shifts,
-  file = "/Volumes/GoogleDrive/My Drive/Research/Shifts/Processed Data/on_duty_shifts.Rda" # nolint
+  file = "./created_data/chicago/on_duty_shifts.Rda" # nolint
 )
