@@ -39,8 +39,14 @@ officers_old <- officers_old %>%
 
 
 # cleaning new officers information ---------------------------------------
-
+## update: 10-5-2022 - I includd only old officer badges
+## this was done intentionally so i have all info 
+## the ones that are dropped are insignificant - very few and they are either new employees
+## that had shifts past our sample year, or there were only a couple straggler shifts
+## which were in the first half of 2013. These didn't look like any particular division either.
+## i felt very confident in dropping these. You can undrop by taking out the filter in the below
 officers <- officers %>% 
+  filter(badge %in% officers_old$badge) %>%
   mutate(officer_female = ifelse(officer_sex == "F", 1, 0)) %>% 
   mutate(officer_black = ifelse(officer_race == "B", 1, 0),
          officer_white = ifelse(officer_race == "W", 1, 0),
@@ -50,8 +56,8 @@ officers <- officers %>%
 
 # merging the information -------------------------------------------------
 
-all_officers <- officers %>% 
-  left_join(officers_old) %>% 
+all_officers <- officers_old %>% 
+  left_join(officers) %>% 
   relocate(first_name, last_name, badge) 
 
 

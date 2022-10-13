@@ -1,0 +1,87 @@
+---
+title: "Louisville Summary"
+output: 
+  pdf_document:
+    extra_dependencies: ["float"]
+date: "2022-10-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, message = F, warning = F, fig.pos = "!H")
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+
+```
+```{r}
+source("exploratory_work_michael/shifts_visualizations.R")
+source("exploratory_work_michael/unmerged_vs_merged_shifts.R")
+```
+
+# Louisville Metro Police
+
+Louisville Metro Police Department (LMPD) has given data on all individual-level shifts from 2013-2020. In addition, we have merged these shifts with officer demographics and use-of-force information, all connected by badge number. The goal of this project is to study whether shift-lengths have a significant impact on an officers propensity to use force.
+
+## Possible Variation
+
+We are hoping to exploit a natural experiment in which LMPD had two policy changes regarding shift lengths: one in September 2015 where all officers switched to 8-hour shifts (instead of 8 or 10 hour shifts), and another in May 2016 where all officers went to 8/10/12 hour shifts. 
+
+In Figure \ref{discont_figure}, the universe of shifts are shown from LMPD over the sample period. Clearly, LMPD abides by the these policy changes, as the 8-month period between the two vertical lines shows that nearly every shift was an 8-hour shift, and that 12-hour shifts became much more prevalent after May 2016. 
+
+Given these two discontinuities, we would like to explore the possibilities of regression discontinuity. If regression discontinuity is unreliable in this scenario, differences-in-differences will be utilized, although the multiple treatments also provides new challenges.
+
+Note that there does not appear to be a drop-off in the UOF within these discontinuities—Figure \ref{uof_shifts_figure} shows the total number of distinct UOF incidents over time aggregated at the monthly level. There appears to be no significant drop-off in raw counts.
+
+## Use of Force
+
+According to LMPD policy (Chapter 9 Use of Force), commanding officers are required to complete a use-of-force (UOF) report on all incidents resulting in any injury, or the complaint of any injury to either the officer or subject, the use of physical force other than a control hold, or a fresh arrest resulting in a charge of resisting arrest. The commanding officer responds to the scene, investigates the incident, and completes the report and other necessary paperwork (see 9.1.14). 
+
+## Unmerged UOF to Shifts
+
+Of the 3478 unique UOF reports that were written in the sample period, we matched 3160 to a corresponding shift (`r round(3160/3478, 2)`%).  We feel confident that these shifts are not too different from their merged counterparts. Figure \ref{unmerged_merged_histogram} shows the frequency of unmerged and merged use-of-force shifts by hour of the day. It appears that both histograms and density functions follow roughly the same pattern, although there is slightly higher frequency of late-night UOF reports being unmerged.
+
+Moreover, Figure \ref{timeplot_uof_unmerged} shows that there does not appear to be a particular time-period in which the unmerged UOF incidents occur—the "Not Merged" line does not appear to follow any particular pattern or have any obvious inconsistencies.
+
+Although not shown here for presentation purposes, it appears there is some statistical difference in the age of officers that have an unmerged UOF report. UOF reports that are unmerged tend to go towards older and more experienced police officers.
+
+## Merged UOF to Shifts
+
+The UOF reports that are merged to shifts are most likely to occur in the 1-8 divisions of Louisville as shown in Table \ref{uof_prevalence_table}. Analyzing this further, Table \ref{division_race_table} it appears that within each division, when a UOF incident occurs, it is more likely to be a less experienced officer and white officer. 
+
+## Officers Switching Between Shifts
+
+One important question is whether officers switch between 8/10/12 hour shifts. 
+
+\newpage
+
+## Figures
+
+```{r, fig.cap="\\label{discont_figure}Frequency of Shift Lengths Over Sample Period"}
+discont_figure
+```
+
+```{r, fig.cap = "\\label{unmerged_merged_histogram}Distributions of UOF shifts that were merged and unmerged"}
+unmerged_merged_histogram
+```
+
+```{r, fig.cap = "\\label{timeplot_uof_unmerged}Time graph of merged and unmerged shifts"}
+timeplot_uof_unmerged
+```
+
+```{r, fig.cap = "\\label{uof_shifts_figure}Frequency of Distinct UOF Incidents Over Time"}
+uof_shifts_figure
+```
+
+
+```{r, fig.cap="\\label{shift_distribution}Distribution of all shifts by-hour"}
+shift_distribution
+```
+\newpage
+## Tables
+
+```{r}
+uof_prevalence_table
+```
+
+```{r}
+division_race_table
+```
+
