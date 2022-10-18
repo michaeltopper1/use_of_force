@@ -249,13 +249,16 @@ officer_panel_pre_switch_1 <-
 louisville_shifts_select_1 <- louisville_shifts %>%
     select(
         badge, date_year_month, startdate, shift_length,
-        force_used, rank, assignment, physical_force_used
+        force_used, rank, assignment, physical_force_used,
+        start_hour
     ) %>%
     filter(startdate < "2016-05-01") %>%
     left_join(officer_panel_pre_switch_1) %>%
     filter(rank == "police officer") %>%
     mutate(
         date_fe = as.Date(startdate),
+        shift_10 = ifelse(shift_length == 10, 1, 0),
+        shift_12 = ifelse(shift_length == 12, 1, 0),
         post_type_70 = ifelse(startdate > "2015-09-01", type_70, 0),
         post_type_80 = ifelse(startdate > "2015-09-01", type_80, 0),
         post_type_90 = ifelse(startdate > "2015-09-01", type_90, 0),
@@ -264,39 +267,39 @@ louisville_shifts_select_1 <- louisville_shifts %>%
         post_type_100 = ifelse(startdate > "2015-09-01", type_70, 0)
     )
 
-officer_panel_post_switch_2 <-
-    louisville_shifts %>%
-    filter(startdate > "2016-05-01") %>%
-    select(badge, shift_length) %>%
-    mutate(shift_12_hour = ifelse(shift_length > 10, 1, 0)) %>%
-    group_by(badge) %>%
-    summarise(percent_12_hour = mean(shift_12_hour)) %>%
-    mutate(
-        type_70 = ifelse(percent_12_hour >= 0.70, 1, 0),
-        type_80 = ifelse(percent_12_hour >= 0.80, 1, 0),
-        type_90 = ifelse(percent_12_hour >= 0.90, 1, 0),
-        type_95 = ifelse(percent_12_hour >= 0.95, 1, 0),
-        type_98 = ifelse(percent_12_hour >= 0.98, 1, 0),
-        type_100 = ifelse(percent_12_hour >= 1, 1, 0)
-    )
+# officer_panel_post_switch_2 <-
+#     louisville_shifts %>%
+#     filter(startdate > "2016-05-01") %>%
+#     select(badge, shift_length) %>%
+#     mutate(shift_12_hour = ifelse(shift_length > 10, 1, 0)) %>%
+#     group_by(badge) %>%
+#     summarise(percent_12_hour = mean(shift_12_hour)) %>%
+#     mutate(
+#         type_70 = ifelse(percent_12_hour >= 0.70, 1, 0),
+#         type_80 = ifelse(percent_12_hour >= 0.80, 1, 0),
+#         type_90 = ifelse(percent_12_hour >= 0.90, 1, 0),
+#         type_95 = ifelse(percent_12_hour >= 0.95, 1, 0),
+#         type_98 = ifelse(percent_12_hour >= 0.98, 1, 0),
+#         type_100 = ifelse(percent_12_hour >= 1, 1, 0)
+#     )
 
-louisville_shifts_select_2 <- louisville_shifts %>%
-    select(
-        badge, date_year_month, startdate, shift_length,
-        force_used, rank, assignment, physical_force_used
-    ) %>%
-    filter(startdate > "2016-05-01") %>%
-    left_join(officer_panel_post_switch_2) %>%
-    filter(rank == "police officer") %>%
-    mutate(
-        date_fe = as.Date(startdate),
-        post_type_70 = ifelse(startdate > "2015-09-01", type_70, 0),
-        post_type_80 = ifelse(startdate > "2015-09-01", type_80, 0),
-        post_type_90 = ifelse(startdate > "2015-09-01", type_90, 0),
-        post_type_95 = ifelse(startdate > "2015-09-01", type_95, 0),
-        post_type_98 = ifelse(startdate > "2015-09-01", type_98, 0),
-        post_type_100 = ifelse(startdate > "2015-09-01", type_70, 0)
-    )
+# louisville_shifts_select_2 <- louisville_shifts %>%
+#     select(
+#         badge, date_year_month, startdate, shift_length,
+#         force_used, rank, assignment, physical_force_used
+#     ) %>%
+#     filter(startdate > "2016-05-01") %>%
+#     left_join(officer_panel_post_switch_2) %>%
+#     filter(rank == "police officer") %>%
+#     mutate(
+#         date_fe = as.Date(startdate),
+#         post_type_70 = ifelse(startdate > "2015-09-01", type_70, 0),
+#         post_type_80 = ifelse(startdate > "2015-09-01", type_80, 0),
+#         post_type_90 = ifelse(startdate > "2015-09-01", type_90, 0),
+#         post_type_95 = ifelse(startdate > "2015-09-01", type_95, 0),
+#         post_type_98 = ifelse(startdate > "2015-09-01", type_98, 0),
+#         post_type_100 = ifelse(startdate > "2015-09-01", type_70, 0)
+#     )
 
 # # time controls for regressions
 # louisville_shifts <- louisville_shifts %>% mutate(
@@ -362,6 +365,18 @@ louisville_shifts_select_1 %>%
     feols(
         fml = physical_force_used
         ~ post_type_100 | badge + date_fe + assignment,
+        data = .,
+        cluster = "badge"
+    ) %>%
+    summary()
+
+
+
+louisville_shifts_select_1 %>%
+    filter(percent_10_hour > .1) %>%
+    feols(
+        fml = physical_force_used
+        ~ post_type_95 | badge + date_fe + assignment + start_hour,
         data = .,
         cluster = "badge"
     ) %>%
