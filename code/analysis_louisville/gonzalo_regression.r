@@ -232,10 +232,14 @@ louisville_shifts <- louisville_shifts %>% mutate(
 officer_panel_pre_switch_1 <-
     louisville_shifts %>%
     filter(startdate < "2015-09-01") %>%
-    select(badge, shift_length) %>%
-    mutate(shift_10_hour = ifelse(shift_length > 8, 1, 0)) %>%
+    filter(startdate > "2014-09-01") %>%
+    select(badge, shift_length, physical_force_used) %>%
+    mutate(shift_10_hour = ifelse(shift_length > 9, 1, 0)) %>%
     group_by(badge) %>%
-    summarise(percent_10_hour = mean(shift_10_hour)) %>%
+    summarise(
+        percent_10_hour = mean(shift_10_hour),
+        have_used_phys_force = max(physical_force_used)
+    ) %>%
     mutate(
         type_70 = ifelse(percent_10_hour >= 0.70, 1, 0),
         type_80 = ifelse(percent_10_hour >= 0.80, 1, 0),
@@ -253,6 +257,7 @@ louisville_shifts_select_1 <- louisville_shifts %>%
         start_hour
     ) %>%
     filter(startdate < "2016-05-01") %>%
+    filter(startdate > "2014-09-01") %>%
     left_join(officer_panel_pre_switch_1) %>%
     filter(rank == "police officer") %>%
     mutate(
@@ -313,28 +318,20 @@ louisville_shifts_select_1 <- louisville_shifts %>%
 # )
 
 louisville_shifts_select_1 %>%
+    filter(have_used_phys_force == 1) %>%
     feols(
         fml = physical_force_used
-        ~ post_type_70 | badge + date_fe + assignment,
+        ~ post_type_70 | badge + date_fe + start_hour,
         data = .,
         cluster = "badge"
     ) %>%
     summary()
 
 louisville_shifts_select_1 %>%
+    filter(have_used_phys_force == 1) %>%
     feols(
         fml = physical_force_used
-        ~ post_type_80 | badge + date_fe + assignment,
-        data = .,
-        cluster = "badge"
-    ) %>%
-    summary()
-
-
-louisville_shifts_select_1 %>%
-    feols(
-        fml = physical_force_used
-        ~ post_type_90 | badge + date_fe + assignment,
+        ~ post_type_80 | badge + date_fe + start_hour,
         data = .,
         cluster = "badge"
     ) %>%
@@ -342,9 +339,10 @@ louisville_shifts_select_1 %>%
 
 
 louisville_shifts_select_1 %>%
+    filter(have_used_phys_force == 1) %>%
     feols(
         fml = physical_force_used
-        ~ post_type_95 | badge + date_fe + assignment,
+        ~ post_type_90 | badge + date_fe + start_hour,
         data = .,
         cluster = "badge"
     ) %>%
@@ -352,9 +350,10 @@ louisville_shifts_select_1 %>%
 
 
 louisville_shifts_select_1 %>%
+    filter(have_used_phys_force == 1) %>%
     feols(
         fml = physical_force_used
-        ~ post_type_98 | badge + date_fe + assignment,
+        ~ post_type_95 | badge + date_fe + start_hour,
         data = .,
         cluster = "badge"
     ) %>%
@@ -362,9 +361,21 @@ louisville_shifts_select_1 %>%
 
 
 louisville_shifts_select_1 %>%
+    filter(have_used_phys_force == 1) %>%
     feols(
         fml = physical_force_used
-        ~ post_type_100 | badge + date_fe + assignment,
+        ~ post_type_98 | badge + date_fe + start_hour,
+        data = .,
+        cluster = "badge"
+    ) %>%
+    summary()
+
+
+louisville_shifts_select_1 %>%
+    filter(have_used_phys_force == 1) %>%
+    feols(
+        fml = physical_force_used
+        ~ post_type_100 | badge + date_fe + start_hour,
         data = .,
         cluster = "badge"
     ) %>%
